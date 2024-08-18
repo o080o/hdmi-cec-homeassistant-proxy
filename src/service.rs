@@ -90,8 +90,9 @@ impl HaBroker {
             };
 
             println!(
-                "publishing config to topic {}",
-                entity.get_discovery_topic()
+                "publishing config to topic {}: {}",
+                entity.get_discovery_topic(),
+                discovery_message,
             );
 
             let config_published = self
