@@ -124,7 +124,7 @@ impl MqttConfig {
 }
 
 fn default_device_id() -> String {
-    return "hdmi-cec-proxy".to_string();
+    return "hdmi_cec_proxy".to_string();
 }
 
 fn default_keep_alive() -> f64 {
@@ -140,5 +140,5 @@ fn default_discovery_topic_prefix() -> String {
 }
 
 fn default_unique_id() -> String {
-    return "hdmi-device".to_string();
+    return "hdmi_device".to_string();
 }

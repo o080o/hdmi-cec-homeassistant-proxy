@@ -21,7 +21,7 @@ pub trait HaMqttEntity {
     fn connect_state(&mut self, state: StateManager);
 }
 
-#[derive(strum_macros::Display)]
+#[derive(strum_macros::Display, Eq, PartialEq)]
 pub enum EntityClass {
     #[strum(to_string = "switch")]
     Switch,
@@ -33,12 +33,14 @@ pub enum EntityClass {
     BinarySensor,
 }
 
-#[derive(strum_macros::Display)]
+#[derive(strum_macros::Display, PartialEq, Eq)]
 pub enum DeviceClass {
     #[strum(to_string = "switch")]
     Switch,
     #[strum(to_string = "motion")]
     Motion,
+    #[strum(to_string = "none")]
+    None,
 }
 
 pub trait Commandable {

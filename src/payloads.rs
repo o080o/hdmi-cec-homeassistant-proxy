@@ -3,6 +3,7 @@ use serde::Serialize;
 use crate::config::Config;
 use crate::ha_entity::{Device, DeviceClass};
 
+//TODO merge with DeviceClass from ha_entity
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HaDeviceClass {
@@ -57,14 +58,30 @@ impl Default for OriginPayload {
 #[derive(Debug, Clone, Serialize)]
 pub struct ConfigPayload {
     name: Option<String>,
-    //object_id: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    object_id: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     state_topic: Option<String>,
-    //command_topic: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    command_topic: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     device_class: Option<String>, //TODO limit to all available device classes via enum!
-    //value_template: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    value_template: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     unique_id: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     device: Option<DevicePayload>,
-    //origin: Option<OriginPayload>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    origin: Option<OriginPayload>,
 }
 
 impl ConfigPayload {
@@ -75,16 +92,22 @@ impl ConfigPayload {
         device_class: &DeviceClass,
         id: &str,
     ) -> Self {
+        let device_class = if *device_class == DeviceClass::None {
+            None
+        } else {
+            Some(device_class.to_string())
+        };
+
         Self {
             name: None,
             state_topic,
-            //command_topic,
-            device_class: Some(device_class.to_string()),
-            unique_id: Some(format!("{}-{}", device.unique_id, id)),
-            //origin: Some(OriginPayload::default()),
+            command_topic,
+            device_class,
+            unique_id: Some(format!("{}_{}", device.unique_id, id)),
+            origin: Some(OriginPayload::default()),
             device: Some(DevicePayload::from_device(device)),
-            //object_id: None,
-            //value_template: None,
+            object_id: None,
+            value_template: None,
         }
     }
 }

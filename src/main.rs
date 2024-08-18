@@ -30,46 +30,44 @@ fn main() {
     };
 
     let device = Device::from_config(&config);
+
     let switch = device
-        .entity("tv-state", EntityClass::BinarySensor, DeviceClass::Motion)
-        .with_state(|state| {})
-        //.with_commands(SimpleCommand::new(|payload| {
-            //println!("command! {}", payload)
-        //}))
-        ;
-    //.with_state(CecTvState::new(...))
-    //.with_state(|state|{ magic_stateful_component.attach_state(state) })
-    //.with_state(polling_state(5, CecState::new(...)))
-    //.with_commands(CecTvCommands)
+        .entity("tv", EntityClass::Switch, DeviceClass::Switch)
+        .with_state(|state| {
+            thread::spawn(move || {
+                while true {
+                    println!("turning on");
+                    state.update_state("ON".to_string());
+                    thread::sleep(Duration::from_secs(5));
+                    println!("turning off");
+                    state.update_state("OFF".to_string());
+                    thread::sleep(Duration::from_secs(5));
+                }
+            });
+        })
+        .with_commands(SimpleCommand::new(|payload| {
+            println!("command! {}", payload)
+        }));
 
-    //let mut vol_up = Entity::new(EntityClass:Switch, "vol-up").with_commands(CecVolumeCommand::new(Volume::up));
-    //let mut vol_up = Entity::new(EntityClass:Switch, "vol-down").with_commands(CecVolumeCommand::new(Volume::down));
+    let mut vol_up = device
+        .entity("volume_up", EntityClass::Button, DeviceClass::None)
+        .with_commands(SimpleCommand::new(|payload| {
+            println!("volume up! {}", payload)
+        }));
 
-    // example for the future state:
-    // let mut switch = HaSwitch::new(&config, "lockscreen");
-    // switch.get_state = Box::new(|| return process_exists(swayidle));
-    // switch.set_state = Box::new(|state| { process_spawn_lockscreen or process_killall("swayidle")});
-
-    //let topics = Topics::new(&config);
-    //let switch = PollingEntity::new(switch, 5);
+    let mut vol_down = device
+        .entity("volume_down", EntityClass::Button, DeviceClass::None)
+        .with_commands(SimpleCommand::new(|payload| {
+            println!("volume down! {}", payload)
+        }));
 
     let mut homeassistant = HaBroker::from_config(config);
     homeassistant.add_entity(switch);
-    //homeassistant.add_entity(vol_up);
-    //homeassistant.add_entity(vol_down);
-    //homeassistant.poll_entity(switch, 5.seconds());
+    homeassistant.add_entity(vol_up);
+    homeassistant.add_entity(vol_down);
 
     homeassistant.configure();
     println!("device configured");
-
-    println!("polling switch state");
-    // thread::spawn(|| {
-    //     // do complicated async thing, and every now and then get notified of something relevent!
-    //     entity.update(new_state);
-    //     homeassistant.update_state("tv-state", get_cec_state());
-
-    //     thread::sleep(Duration::from_secs(3));
-    // });
 
     println!("listening for messages...");
     homeassistant.listen();
