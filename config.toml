@@ -1,6 +1,0 @@
-[topic]
-prefix="homeassistant/blah"
-
-[mqtt]
-host="..."
-port=1883
