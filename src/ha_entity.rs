@@ -109,8 +109,8 @@ impl Entity {
         let prefix = &device.topic_prefix;
         let class_str = entity_class.to_string();
         let object_id = device.object_id.as_ref().unwrap_or(&device.unique_id);
-        // return format!("{prefix}/{class_str}/{object_id}-{name}");
-        return format!("{prefix}/{class_str}/garden");
+        return format!("{prefix}/{class_str}/{object_id}_{name}");
+        // return format!("{prefix}/{class_str}/garden");
     }
 
     pub fn with_state<F: 'static + Fn(StateManager) -> ()>(mut self, func: F) -> Self {
