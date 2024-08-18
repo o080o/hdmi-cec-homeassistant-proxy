@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, thread, time::Duration};
 
 use anyhow::Context;
-use rumqttc::{Client, Connection, Event, Incoming, Publish, QoS};
+use rumqttc::{Client, Connection, Event, Incoming, Outgoing, Publish, QoS};
 
 use crate::{config::Config, ha_entity::HaMqttEntity};
 
@@ -25,7 +25,7 @@ impl StateManager {
 
     pub fn update_state(&self, state: String) {
         self.client
-            .publish(&self.state_topic, QoS::AtLeastOnce, true, state);
+            .publish(&self.state_topic, QoS::AtLeastOnce, false, state); //TODO should retain state...
     }
 }
 
@@ -45,6 +45,7 @@ impl HaBroker {
 
     pub fn from_config(config: Config) -> Self {
         let mqtt_options = config.mqtt.as_mqtt_options();
+        println!("connection options: {:?}", mqtt_options);
         let (client, connection) = Client::new(mqtt_options, config.mqtt.async_capacity);
         let ha_broker = Self {
             entities: HashMap::new(),
@@ -86,6 +87,11 @@ impl HaBroker {
                 Ok(value) => value,
                 Err(err) => panic! {"cound not stringify the discovery payload! error={err}"},
             };
+
+            println!(
+                "publishing config to topic {}",
+                entity.get_discovery_topic()
+            );
 
             let config_published = self
                 .client
@@ -150,13 +156,16 @@ impl HaBroker {
                     // find an entity for event.topic, and use that
                     self.notify_entities(&event);
                 }
+                Ok(Event::Outgoing(Outgoing::Publish(event))) => {
+                    println!("published event {:?}", event);
+                    // find an entity for event.topic, and use that
+                }
                 Err(err) => {
                     println!("connection error... {err}");
                 }
-                _ => {
-                    println!("event that I don't care about...");
-                }
+                _ => {}
             }
+            thread::sleep(Duration::from_millis(500));
         }
     }
 }
