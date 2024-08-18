@@ -99,7 +99,7 @@ impl ConfigPayload {
         };
 
         Self {
-            name: None,
+            name: Some(id.to_string()),
             state_topic,
             command_topic,
             device_class,
