@@ -1,4 +1,4 @@
-use ha_entity::{Device, EntityClass};
+use ha_entity::{Device, DeviceClass, EntityClass, SimpleCommand};
 use rumqttc::{Client, QoS};
 use std::{alloc::handle_alloc_error, fs, thread, time::Duration};
 
@@ -30,7 +30,13 @@ fn main() {
     };
 
     let device = Device::from_config(&config);
-    let switch = device.entity("tv-state", EntityClass::Switch);
+    let switch = device
+        .entity("tv-state", EntityClass::BinarySensor, DeviceClass::Motion)
+        .with_state(|state| {})
+        //.with_commands(SimpleCommand::new(|payload| {
+            //println!("command! {}", payload)
+        //}))
+        ;
     //.with_state(CecTvState::new(...))
     //.with_state(|state|{ magic_stateful_component.attach_state(state) })
     //.with_state(polling_state(5, CecState::new(...)))

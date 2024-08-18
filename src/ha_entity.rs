@@ -33,8 +33,32 @@ pub enum EntityClass {
     BinarySensor,
 }
 
+#[derive(strum_macros::Display)]
+pub enum DeviceClass {
+    #[strum(to_string = "switch")]
+    Switch,
+    #[strum(to_string = "motion")]
+    Motion,
+}
+
 pub trait Commandable {
     fn on_command(&mut self, payload: &str);
+}
+
+pub struct SimpleCommand {
+    on_command: Box<dyn Fn(&str) -> ()>,
+}
+impl SimpleCommand {
+    pub fn new<T: 'static + Fn(&str) -> ()>(on_command: T) -> Self {
+        Self {
+            on_command: Box::new(on_command),
+        }
+    }
+}
+impl Commandable for SimpleCommand {
+    fn on_command(&mut self, payload: &str) {
+        (self.on_command)(payload);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -55,15 +79,15 @@ impl Device {
         }
     }
 
-    pub fn entity(&self, id: &str, entity_class: EntityClass) -> Entity {
+    pub fn entity(&self, id: &str, entity_class: EntityClass, device_class: DeviceClass) -> Entity {
         Entity {
             id: 0, //TODO remove id's or implement for realsies.
             name: id.to_string(),
             topic_prefix: Entity::topic_prefix(self, id, &entity_class),
             entity_class,
-            stateful: false,
+            device_class,
             device: self.clone(),
-            state: None,
+            stateful: None,
             commands: None,
         }
     }
@@ -74,10 +98,10 @@ pub struct Entity {
     pub name: String,
     pub topic_prefix: String,
     pub entity_class: EntityClass,
+    pub device_class: DeviceClass,
     pub device: Device,
-    state: Option<StateManager>,
     commands: Option<Box<dyn Commandable>>,
-    stateful: bool,
+    stateful: Option<Box<dyn Fn(StateManager) -> ()>>,
 }
 
 impl Entity {
@@ -85,7 +109,18 @@ impl Entity {
         let prefix = &device.topic_prefix;
         let class_str = entity_class.to_string();
         let object_id = device.object_id.as_ref().unwrap_or(&device.unique_id);
-        return format!("{prefix}/{class_str}/{object_id}-{name}");
+        // return format!("{prefix}/{class_str}/{object_id}-{name}");
+        return format!("{prefix}/{class_str}/garden");
+    }
+
+    pub fn with_state<F: 'static + Fn(StateManager) -> ()>(mut self, func: F) -> Self {
+        self.stateful = Some(Box::new(func));
+        return self;
+    }
+
+    pub fn with_commands<T: 'static + Commandable>(mut self, commands: T) -> Self {
+        self.commands = Some(Box::new(commands));
+        return self;
     }
 }
 
@@ -95,6 +130,7 @@ impl HaMqttEntity for Entity {
             self.get_state_topic(),
             self.get_command_topic(),
             &self.device,
+            &self.device_class,
             &self.name,
         );
     }
@@ -117,7 +153,7 @@ impl HaMqttEntity for Entity {
     }
 
     fn get_state_topic(&self) -> Option<String> {
-        if self.stateful {
+        if self.stateful.is_some() {
             let prefix = &self.topic_prefix;
             return Some(format!("{prefix}/state"));
         } else {
@@ -141,6 +177,8 @@ impl HaMqttEntity for Entity {
     }
 
     fn connect_state(&mut self, state: StateManager) {
-        self.state = Some(state);
+        if let Some(state_listener) = &self.stateful {
+            (state_listener)(state)
+        }
     }
 }

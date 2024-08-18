@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::config::Config;
-use crate::ha_entity::Device;
+use crate::ha_entity::{Device, DeviceClass};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -57,14 +57,14 @@ impl Default for OriginPayload {
 #[derive(Debug, Clone, Serialize)]
 pub struct ConfigPayload {
     name: Option<String>,
-    object_id: Option<String>,
+    //object_id: Option<String>,
     state_topic: Option<String>,
-    command_topic: Option<String>,
-    device_class: Option<HaDeviceClass>,
-    value_template: Option<String>,
+    //command_topic: Option<String>,
+    device_class: Option<String>, //TODO limit to all available device classes via enum!
+    //value_template: Option<String>,
     unique_id: Option<String>,
     device: Option<DevicePayload>,
-    origin: Option<OriginPayload>,
+    //origin: Option<OriginPayload>,
 }
 
 impl ConfigPayload {
@@ -72,18 +72,19 @@ impl ConfigPayload {
         state_topic: Option<String>,
         command_topic: Option<String>,
         device: &Device,
+        device_class: &DeviceClass,
         id: &str,
     ) -> Self {
         Self {
             name: None,
             state_topic,
-            command_topic,
-            device_class: Some(HaDeviceClass::Switch),
+            //command_topic,
+            device_class: Some(device_class.to_string()),
             unique_id: Some(format!("{}-{}", device.unique_id, id)),
-            origin: Some(OriginPayload::default()),
+            //origin: Some(OriginPayload::default()),
             device: Some(DevicePayload::from_device(device)),
-            object_id: None,
-            value_template: None,
+            //object_id: None,
+            //value_template: None,
         }
     }
 }

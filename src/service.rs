@@ -5,6 +5,7 @@ use rumqttc::{Client, Connection, Event, Incoming, Outgoing, Publish, QoS};
 
 use crate::{config::Config, ha_entity::HaMqttEntity};
 
+#[derive(Clone)]
 pub struct StateManager {
     client: Arc<Client>,
     state_topic: String,
@@ -165,7 +166,6 @@ impl HaBroker {
                 }
                 _ => {}
             }
-            thread::sleep(Duration::from_millis(500));
         }
     }
 }
