@@ -10,17 +10,6 @@ pub struct DevicePayload {
 }
 
 impl DevicePayload {
-    pub fn from_config(config: &Config) -> Self {
-        Self {
-            name: config
-                .device
-                .device_name
-                .clone()
-                .unwrap_or(config.device.unique_id.clone()),
-            identifiers: vec![config.device.unique_id.clone()],
-        }
-    }
-
     pub fn from_device(config: &Device) -> Self {
         Self {
             name: config.name.clone().unwrap_or(config.unique_id.clone()),

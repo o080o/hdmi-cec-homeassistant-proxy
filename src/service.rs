@@ -52,6 +52,7 @@ pub struct HaBroker {
 
 impl HaBroker {
     /// get a copy of a reference to the client. useful if you want to publish messages to MQTT directly.
+    #[allow(dead_code)]
     pub fn client(&self) -> Arc<Client> {
         self.client.clone()
     }
