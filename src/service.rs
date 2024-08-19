@@ -183,7 +183,7 @@ impl HaBroker {
             .with_context(|| format!("{}", &self.config.topic.status))
             .expect("unable to subscribe to homeassistant's status topic");
 
-        info!("listening for messages...");
+        info!("listening for mqtt messages...");
 
         // Iterate to poll the eventloop for connection progress
         for notification in connection.iter() {

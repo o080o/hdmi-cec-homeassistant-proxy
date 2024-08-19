@@ -94,7 +94,7 @@ fn main() {
     // Setup a simple button for 4 sources. It's unclear to me if CEC even
     //supports more than 4 input sources. TODO maybe use a Select entity? that
     // will require reading the state though, unless we want to use optimistic mode.
-    let sources = (1..4).map(|i| {
+    let sources = (1..5).map(|i| {
         return device
             .entity(
                 &format!("Source{}", i),

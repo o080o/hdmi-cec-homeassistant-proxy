@@ -64,6 +64,22 @@ impl HdmiCecProcess {
         }
     }
 
+    pub fn update_state(&self, state: bool) {
+        let mqtt_state = if state { "ON" } else { "OFF" };
+
+        self.tv_state
+            .lock()
+            .expect("could not get lock")
+            .replace(mqtt_state.to_string());
+        self.state
+            .lock()
+            .expect("could not get lock")
+            .as_ref()
+            .map(|state| {
+                state.update_state(mqtt_state.to_string());
+            });
+    }
+
     pub fn listen(&self) {
         info!("listening to the cec-client process...");
         let state = self
@@ -101,6 +117,7 @@ impl HdmiCecProcess {
         } else {
             process.send("standby 0.0.0.0\n").unwrap();
         }
+        self.update_state(state);
     }
 
     pub fn volume_down(&self) {
