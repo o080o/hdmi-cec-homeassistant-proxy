@@ -7,7 +7,7 @@ use strum_macros::Display;
 
 use crate::config::{Config, DeviceConfig};
 use crate::payloads::ConfigPayload;
-use crate::service::{State, StateManager};
+use crate::service::StateManager;
 
 pub trait HaMqttEntity {
     fn get_config_payload(&self) -> ConfigPayload;

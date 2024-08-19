@@ -38,6 +38,9 @@ pub struct TopicConfig {
     /// the prefix for the discovery topic. This is "homeassistant" by default.
     #[serde(default = "default_discovery_topic_prefix")]
     pub prefix: String,
+
+    #[serde(default = "default_status_topic")]
+    pub status: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -137,6 +140,10 @@ fn default_async_capacity() -> usize {
 
 fn default_discovery_topic_prefix() -> String {
     return "homeassistant".to_string();
+}
+
+fn default_status_topic() -> String {
+    return "homeassistant/status".to_string();
 }
 
 fn default_unique_id() -> String {

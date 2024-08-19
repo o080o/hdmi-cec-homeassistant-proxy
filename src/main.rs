@@ -1,16 +1,19 @@
 use ha_entity::{Device, DeviceClass, EntityClass, SimpleCommand};
 use rumqttc::{Client, QoS};
-use std::{alloc::handle_alloc_error, fs, thread, time::Duration};
+use std::{alloc::handle_alloc_error, fs, sync::Arc, thread, time::Duration};
 
 mod config;
 mod ha_entity;
 mod payloads;
+mod process;
+mod process_entity;
 mod service;
 
 const CONFIG_FILE: &'static str = "config.toml";
 
 fn main() {
     use config::Config;
+    use process_entity::{ClonableHdmiCecProcess, HdmiCecProcess};
     use service::HaBroker;
 
     println!("Hello, world!");
@@ -29,13 +32,23 @@ fn main() {
         }
     };
 
+    let mut hdmicec = Arc::new(HdmiCecProcess::new());
+
     let device = Device::from_config(&config);
+
+    let switch_hdmicec = hdmicec.clone();
 
     let switch = device
         .entity("tv", EntityClass::Switch, DeviceClass::Switch)
-        .with_state(|state| {
+        .with_state(move |state| {
+            switch_hdmicec.attach_statemanager(state.clone());
+
+            // make another clone for the next closure...
+            let switch_hdmicec = switch_hdmicec.clone();
             thread::spawn(move || {
                 while true {
+                    println!("querying TV...");
+                    switch_hdmicec.query_tv_state();
                     println!("turning on");
                     state.update_state("ON".to_string());
                     thread::sleep(Duration::from_secs(5));
@@ -45,30 +58,30 @@ fn main() {
                 }
             });
         })
-        .with_commands(SimpleCommand::new(|payload| {
-            println!("command! {}", payload)
+        .with_commands(hdmicec.command(move |hdmicec, payload| {
+            hdmicec.set_tv(false);
+            println!("command! {}", payload);
         }));
 
+    let volup_hdmicec = hdmicec.clone();
     let mut vol_up = device
         .entity("volume_up", EntityClass::Button, DeviceClass::None)
-        .with_commands(SimpleCommand::new(|payload| {
-            println!("volume up! {}", payload)
+        .with_commands(hdmicec.command(|hdmicec, payload| {
+            println!("volume up! {}", payload);
+            hdmicec.volume_up();
         }));
 
     let mut vol_down = device
         .entity("volume_down", EntityClass::Button, DeviceClass::None)
-        .with_commands(SimpleCommand::new(|payload| {
-            println!("volume down! {}", payload)
+        .with_commands(hdmicec.command(|hdmicec, payload| {
+            println!("volume down! {}", payload);
+            hdmicec.volume_down();
         }));
 
     let mut homeassistant = HaBroker::from_config(config);
     homeassistant.add_entity(switch);
     homeassistant.add_entity(vol_up);
     homeassistant.add_entity(vol_down);
-
-    homeassistant.configure();
-    println!("device configured");
-
-    println!("listening for messages...");
+    hdmicec.listen();
     homeassistant.listen();
 }
