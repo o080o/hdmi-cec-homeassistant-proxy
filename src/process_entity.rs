@@ -36,7 +36,6 @@ impl HdmiCecProcess {
         #[cfg(not(test))] // in a real build, use cec-client
         command.arg("-d").arg("1");
 
-
         let process = CommandProcess::new(&mut command);
         return Self {
             process: Mutex::new(process),

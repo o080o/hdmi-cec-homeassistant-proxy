@@ -14,7 +14,6 @@ pub trait HaMqttEntity {
     fn get_discovery_topic(&self) -> String;
     fn get_state_topic(&self) -> Option<String>;
     fn get_command_topic(&self) -> Option<String>;
-    fn get_id(&self) -> usize;
     fn get_device(&self) -> Device;
     fn get_name(&self) -> String;
     fn on_command(&mut self, payload: &str);
@@ -83,7 +82,6 @@ impl Device {
 
     pub fn entity(&self, id: &str, entity_class: EntityClass, device_class: DeviceClass) -> Entity {
         Entity {
-            id: 0, //TODO remove id's or implement for realsies.
             name: id.to_string(),
             topic_prefix: Entity::topic_prefix(self, id, &entity_class),
             entity_class,
@@ -96,7 +94,6 @@ impl Device {
 }
 
 pub struct Entity {
-    pub id: usize,
     pub name: String,
     pub topic_prefix: String,
     pub entity_class: EntityClass,
@@ -112,7 +109,6 @@ impl Entity {
         let class_str = entity_class.to_string();
         let object_id = device.object_id.as_ref().unwrap_or(&device.unique_id);
         return format!("{prefix}/{class_str}/{object_id}_{name}");
-        // return format!("{prefix}/{class_str}/garden");
     }
 
     pub fn with_state<F: 'static + Fn(StateManager) -> ()>(mut self, func: F) -> Self {
@@ -135,10 +131,6 @@ impl HaMqttEntity for Entity {
             &self.device_class,
             &self.name,
         );
-    }
-
-    fn get_id(&self) -> usize {
-        return self.id;
     }
 
     fn get_device(&self) -> Device {
