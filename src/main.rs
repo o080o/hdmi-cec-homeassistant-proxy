@@ -69,7 +69,7 @@ fn main() {
 
     // Setup a simple button for turning the volume up
     let vol_up = device
-        .entity("volume_up", EntityClass::Button, DeviceClass::None)
+        .entity("volumeup", EntityClass::Button, DeviceClass::None)
         .with_commands(hdmicec.command(|hdmicec, _payload| {
             info!("Volume Up");
             hdmicec.volume_up();
@@ -77,7 +77,7 @@ fn main() {
 
     // Setup a simple button for turning the volume down
     let vol_down = device
-        .entity("volume_down", EntityClass::Button, DeviceClass::None)
+        .entity("volumedown", EntityClass::Button, DeviceClass::None)
         .with_commands(hdmicec.command(|hdmicec, _payload| {
             info!("Volume Down");
             hdmicec.volume_down();

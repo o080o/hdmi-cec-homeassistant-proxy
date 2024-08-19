@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Context;
-use log::{debug, error, trace};
+use log::{debug, error, info, trace};
 use rumqttc::{Client, Connection, Event, Incoming, Publish, QoS};
 
 use crate::{config::Config, ha_entity::HaMqttEntity};
@@ -187,6 +187,8 @@ impl HaBroker {
                 )
             })
             .unwrap();
+
+        info!("listening for messages...");
 
         // Iterate to poll the eventloop for connection progress
         for notification in connection.iter() {
