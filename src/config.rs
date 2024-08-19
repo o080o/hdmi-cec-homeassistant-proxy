@@ -72,7 +72,7 @@ pub struct MqttConfig {
     pub deviceid: String,
     #[serde(default = "default_keep_alive")]
     pub keep_alive: f64,
-    /// the size of the bounded async channel the client is started with
+    /// the size of the bounded async channel the client is started with. **NOTE Setting this too low can cause the entire process to hang unexpectedly!!**
     #[serde(default = "default_async_capacity")]
     pub async_capacity: usize,
     pub max_packet_size: Option<usize>,
@@ -135,7 +135,7 @@ fn default_keep_alive() -> f64 {
 }
 
 fn default_async_capacity() -> usize {
-    return 10;
+    return 50;
 }
 
 fn default_discovery_topic_prefix() -> String {

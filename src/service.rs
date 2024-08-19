@@ -180,13 +180,8 @@ impl HaBroker {
         // subscribe to the homeassistant status topic to recieve birth/will messages. see https://www.home-assistant.io/integrations/mqtt#use-the-birth-and-will-messages-to-trigger-discovery
         self.client
             .subscribe(&self.config.topic.status, QoS::AtLeastOnce)
-            .with_context(|| {
-                format!(
-                    "unable to subscribe to homeassistant's status topic {}",
-                    &self.config.topic.status
-                )
-            })
-            .unwrap();
+            .with_context(|| format!("{}", &self.config.topic.status))
+            .expect("unable to subscribe to homeassistant's status topic");
 
         info!("listening for messages...");
 
