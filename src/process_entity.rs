@@ -117,6 +117,12 @@ impl HdmiCecProcess {
         let mut process = self.process.lock().expect("could not lock process");
         process.send("pow 0.0.0.0\n").unwrap();
     }
+
+    pub fn set_active_source(&self, source: usize) {
+        // not the best way to create the CEC frame.. but it works. taken from cec-o-matic at https://www.cec-o-matic.com/
+        let mut process = self.process.lock().expect("could not lock process");
+        process.send(&format!("tx 1F:82:{}0:00\n", source)).unwrap();
+    }
 }
 
 #[test]

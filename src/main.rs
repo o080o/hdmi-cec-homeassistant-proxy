@@ -91,6 +91,22 @@ fn main() {
             hdmicec.mute();
         }));
 
+    // Setup a simple button for 4 sources. It's unclear to me if CEC even
+    //supports more than 4 input sources. TODO maybe use a Select entity? that
+    // will require reading the state though, unless we want to use optimistic mode.
+    let sources = (1..4).map(|i| {
+        return device
+            .entity(
+                &format!("Source{}", i),
+                EntityClass::Button,
+                DeviceClass::None,
+            )
+            .with_commands(hdmicec.command(move |hdmicec, _payload| {
+                info!("Source {}", i);
+                hdmicec.set_active_source(i as usize);
+            }));
+    });
+
     // start up the mqtt client, and attach all our entities.
     // then, start listening for mqtt messages, and output from
     // cec-client.
@@ -101,6 +117,9 @@ fn main() {
     homeassistant.add_entity(vol_up);
     homeassistant.add_entity(vol_down);
     homeassistant.add_entity(mute);
+    sources.for_each(|source| {
+        homeassistant.add_entity(source);
+    });
     hdmicec.listen();
     homeassistant.listen();
 }
