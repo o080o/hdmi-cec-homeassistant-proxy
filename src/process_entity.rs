@@ -32,7 +32,10 @@ impl HdmiCecProcess {
         #[cfg(test)] // for testing, just use a dummy command, like cat!
         let mut command = Command::new("cat");
         #[cfg(not(test))] // in a real build, use cec-client
-        let mut command = Command::new("cat");
+        let mut command = Command::new("cec-client");
+        #[cfg(not(test))] // in a real build, use cec-client
+        command.arg("-d").arg("1");
+
 
         let process = CommandProcess::new(&mut command);
         return Self {
@@ -53,8 +56,8 @@ impl HdmiCecProcess {
         if line.starts_with("power status:") {
             let state_string = &line[14..];
             let mqtt_state = match state_string {
-                "on\n" => "ON",
-                "off\n" => "OFF",
+                "on" => "ON",
+                "standby" => "OFF",
                 _ => "UNKNOWN",
             };
             println!(
@@ -110,6 +113,11 @@ impl HdmiCecProcess {
         process.send("voldown\n").unwrap();
     }
 
+    pub fn mute(&self) {
+        let mut process = self.process.lock().expect("could not lock process");
+        process.send("mute\n").unwrap();
+    }
+
     pub fn query_tv_state(&self) {
         let mut process = self.process.lock().expect("could not lock process");
         process.send("pow 0.0.0.0\n").unwrap();
@@ -134,15 +142,15 @@ fn hdmi_cec_process_functions() {
 #[test]
 fn parsing_power_line() {
     assert_eq!(
-        HdmiCecProcess::parse_power_state("power status: on\n"),
+        HdmiCecProcess::parse_power_state("power status: on"),
         Some("ON".to_string())
     );
     assert_eq!(
-        HdmiCecProcess::parse_power_state("power status: off\n"),
+        HdmiCecProcess::parse_power_state("power status: off"),
         Some("OFF".to_string())
     );
     assert_eq!(
-        HdmiCecProcess::parse_power_state("power status: idk\n"),
+        HdmiCecProcess::parse_power_state("power status: idk"),
         Some("UNKNOWN".to_string())
     );
 

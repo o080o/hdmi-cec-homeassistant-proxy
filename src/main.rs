@@ -49,12 +49,7 @@ fn main() {
                 while true {
                     println!("querying TV...");
                     switch_hdmicec.query_tv_state();
-                    println!("turning on");
-                    state.update_state("ON".to_string());
-                    thread::sleep(Duration::from_secs(5));
-                    println!("turning off");
-                    state.update_state("OFF".to_string());
-                    thread::sleep(Duration::from_secs(5));
+                    thread::sleep(Duration::from_secs(10));
                 }
             });
         })
@@ -85,7 +80,7 @@ fn main() {
         .entity("mute", EntityClass::Button, DeviceClass::None)
         .with_commands(hdmicec.command(|hdmicec, payload| {
             println!("mute");
-            hdmicec.volume_down();
+            hdmicec.mute();
         }));
 
     let mut homeassistant = HaBroker::from_config(config);
