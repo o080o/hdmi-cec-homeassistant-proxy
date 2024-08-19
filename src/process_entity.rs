@@ -29,8 +29,12 @@ pub struct HdmiCecProcess {
 
 impl HdmiCecProcess {
     pub fn new() -> Self {
-        let command = Command::new("cat");
-        let process = CommandProcess::new(command);
+        #[cfg(test)] // for testing, just use a dummy command, like cat!
+        let mut command = Command::new("cat");
+        #[cfg(not(test))] // in a real build, use cec-client
+        let mut command = Command::new("cat");
+
+        let process = CommandProcess::new(&mut command);
         return Self {
             process: Mutex::new(process),
             state: Mutex::new(None),
@@ -43,6 +47,23 @@ impl HdmiCecProcess {
             .lock()
             .expect("could not get lock")
             .replace(statemanager);
+    }
+
+    fn parse_power_state(line: &str) -> Option<String> {
+        if line.starts_with("power status:") {
+            let state_string = &line[14..];
+            let mqtt_state = match state_string {
+                "on\n" => "ON",
+                "off\n" => "OFF",
+                _ => "UNKNOWN",
+            };
+            println!(
+                "parsed power status: {mqtt_state} from section {state_string} of line {line}"
+            );
+            return Some(mqtt_state.to_string());
+        } else {
+            return None;
+        }
     }
 
     pub fn listen(&self) {
@@ -59,15 +80,7 @@ impl HdmiCecProcess {
         process
             .with_output(move |line| {
                 println!("got line from stdout: {}", line);
-                if line.starts_with("power status:") {
-                    let state_string = &line[12..];
-                    let mqtt_state = match state_string {
-                        "on" => "ON",
-                        "off" => "OFF",
-                        _ => "UNKNOWN",
-                    };
-                    println!("parsed power status: {mqtt_state} from section {state_string} of line {line}");
-
+                if let Some(mqtt_state) = HdmiCecProcess::parse_power_state(&line) {
                     tv_state
                         .lock()
                         .expect("could not get lock")
@@ -101,4 +114,37 @@ impl HdmiCecProcess {
         let mut process = self.process.lock().expect("could not lock process");
         process.send("pow 0.0.0.0\n").unwrap();
     }
+}
+
+#[test]
+fn creating_hdmi_cec_process() {
+    HdmiCecProcess::new();
+}
+
+#[test]
+fn hdmi_cec_process_functions() {
+    let cec = HdmiCecProcess::new();
+    assert!(cec.state.lock().expect("could not take lock").is_none());
+
+    let statemanager = StateManager::faux();
+    cec.attach_statemanager(statemanager);
+    assert!(cec.state.lock().expect("could not take lock").is_some());
+}
+
+#[test]
+fn parsing_power_line() {
+    assert_eq!(
+        HdmiCecProcess::parse_power_state("power status: on\n"),
+        Some("ON".to_string())
+    );
+    assert_eq!(
+        HdmiCecProcess::parse_power_state("power status: off\n"),
+        Some("OFF".to_string())
+    );
+    assert_eq!(
+        HdmiCecProcess::parse_power_state("power status: idk\n"),
+        Some("UNKNOWN".to_string())
+    );
+
+    assert_eq!(HdmiCecProcess::parse_power_state("random junk"), None);
 }

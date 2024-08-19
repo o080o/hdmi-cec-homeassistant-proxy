@@ -6,12 +6,14 @@ use rumqttc::{Client, Connection, Event, Incoming, Outgoing, Publish, QoS};
 use crate::{config::Config, ha_entity::HaMqttEntity};
 
 /// A way for entities to update their state, without accessing the HaBroker. Entities can easily clone and own a copy of this object.
+#[cfg_attr(test, faux::create)]
 #[derive(Clone)]
 pub struct StateManager {
     client: Arc<Client>,
     state_topic: String,
 }
 
+#[cfg_attr(test, faux::methods)]
 impl StateManager {
     /// create a new StateManager for a given state topic, and mqtt client reference
     pub fn new(client: Arc<Client>, state_topic: String) -> Self {

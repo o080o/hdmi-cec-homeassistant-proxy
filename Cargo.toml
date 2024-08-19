@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+faux = "0.1.10"
 rumqttc = "0.24.0"
 serde_json = "1.0.125"
 strum = "0.26.3"
