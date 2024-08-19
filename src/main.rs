@@ -59,22 +59,32 @@ fn main() {
             });
         })
         .with_commands(hdmicec.command(move |hdmicec, payload| {
-            hdmicec.set_tv(false);
-            println!("command! {}", payload);
+            let status = match payload {
+                "ON" => true,
+                _ => false,
+            };
+            println!("switch {status} ({payload})");
+            hdmicec.set_tv(status);
         }));
 
-    let volup_hdmicec = hdmicec.clone();
     let mut vol_up = device
         .entity("volume_up", EntityClass::Button, DeviceClass::None)
         .with_commands(hdmicec.command(|hdmicec, payload| {
-            println!("volume up! {}", payload);
+            println!("volume up");
             hdmicec.volume_up();
         }));
 
     let mut vol_down = device
         .entity("volume_down", EntityClass::Button, DeviceClass::None)
         .with_commands(hdmicec.command(|hdmicec, payload| {
-            println!("volume down! {}", payload);
+            println!("volume down");
+            hdmicec.volume_down();
+        }));
+
+    let mut mute = device
+        .entity("mute", EntityClass::Button, DeviceClass::None)
+        .with_commands(hdmicec.command(|hdmicec, payload| {
+            println!("mute");
             hdmicec.volume_down();
         }));
 
@@ -82,6 +92,7 @@ fn main() {
     homeassistant.add_entity(switch);
     homeassistant.add_entity(vol_up);
     homeassistant.add_entity(vol_down);
+    homeassistant.add_entity(mute);
     hdmicec.listen();
     homeassistant.listen();
 }

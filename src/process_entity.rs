@@ -24,7 +24,7 @@ impl ClonableHdmiCecProcess for Arc<HdmiCecProcess> {
 pub struct HdmiCecProcess {
     process: Mutex<CommandProcess>,
     state: Mutex<Option<StateManager>>,
-    tv_state: Arc<Mutex<Option<bool>>>,
+    tv_state: Arc<Mutex<Option<String>>>,
 }
 
 impl HdmiCecProcess {
@@ -34,7 +34,7 @@ impl HdmiCecProcess {
         return Self {
             process: Mutex::new(process),
             state: Mutex::new(None),
-            tv_state: Arc::new(Mutex::new(Some(false))),
+            tv_state: Arc::new(Mutex::new(None)),
         };
     }
 
@@ -47,16 +47,32 @@ impl HdmiCecProcess {
 
     pub fn listen(&self) {
         println!("starting to listen for the hdmicec process...");
-        let state = self.state.lock().expect("could not lock state").clone();
+        let state = self
+            .state
+            .lock()
+            .expect("could not lock state")
+            .clone()
+            .expect("no state manager present while listening.");
         let tv_state = self.tv_state.clone();
         let mut process = self.process.lock().expect("could not lock process");
 
         process
             .with_output(move |line| {
                 println!("got line from stdout: {}", line);
-                let line = "parse line...";
-                if line == "the status of the TV is xxxxxx" {
-                    tv_state.lock().expect("could not get lock").replace(true);
+                if line.starts_with("power status:") {
+                    let state_string = &line[12..];
+                    let mqtt_state = match state_string {
+                        "on" => "ON",
+                        "off" => "OFF",
+                        _ => "UNKNOWN",
+                    };
+                    println!("parsed power status: {mqtt_state} from section {state_string} of line {line}");
+
+                    tv_state
+                        .lock()
+                        .expect("could not get lock")
+                        .replace(mqtt_state.to_string());
+                    state.update_state(mqtt_state.to_string());
                 }
             })
             .expect("could not start listening process");
@@ -64,21 +80,25 @@ impl HdmiCecProcess {
 
     pub fn volume_up(&self) {
         let mut process = self.process.lock().expect("could not lock process");
-        process.send("volup 0.0.0.0\n").unwrap();
+        process.send("volup\n").unwrap();
     }
 
     pub fn set_tv(&self, state: bool) {
         let mut process = self.process.lock().expect("could not lock process");
-        process.send("volup 0.0.0.0\n").unwrap();
+        if state {
+            process.send("on 0.0.0.0\n").unwrap();
+        } else {
+            process.send("standby 0.0.0.0\n").unwrap();
+        }
     }
 
     pub fn volume_down(&self) {
         let mut process = self.process.lock().expect("could not lock process");
-        process.send("voldown 0.0.0.0\n").unwrap();
+        process.send("voldown\n").unwrap();
     }
 
     pub fn query_tv_state(&self) {
         let mut process = self.process.lock().expect("could not lock process");
-        process.send("status 0.0.0.0\n").unwrap();
+        process.send("pow 0.0.0.0\n").unwrap();
     }
 }
