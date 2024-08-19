@@ -112,7 +112,7 @@ impl HaBroker {
             .with_context(|| {
                 format!(
                     "unable to publish discovery message for entity {}",
-                    entity.get_id()
+                    entity.get_name()
                 )
             });
 
