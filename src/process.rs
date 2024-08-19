@@ -1,25 +1,27 @@
 use std::{
-    borrow::BorrowMut,
-    cell::Cell,
-    io::{BufRead, BufReader, Stdin, Write},
+    io::{BufRead, BufReader, Write},
     process::{Child, ChildStdin, ChildStdout, Command, Stdio},
-    sync::{Arc, Mutex},
-    thread::{self, ThreadId},
-    time::Duration,
+    thread::{self},
 };
+
+use anyhow::Context;
+use log::debug;
 
 pub struct CommandProcess {
     input: ChildStdin,
     output: Option<ChildStdout>,
+    // we need a place to keep the child process reference. not sure what happens if we drop it.
+    #[allow(dead_code)]
     child: Child,
 }
 
 impl CommandProcess {
-    pub fn new(mut command: &mut Command) -> Self {
+    pub fn new(command: &mut Command) -> Self {
         let mut child = command
             .stdout(Stdio::piped())
             .stdin(Stdio::piped())
             .spawn()
+            .with_context(|| format!("{:?}", command.get_program()))
             .expect("could not open process");
 
         return Self {
@@ -38,9 +40,9 @@ impl CommandProcess {
         func: F,
     ) -> Result<(), &str> {
         if self.output.is_some() {
-            println!("spawning reader thread...");
+            debug!("spawning reader thread...");
             let reader = BufReader::new(self.output.take().unwrap());
-            let thread = thread::spawn(|| {
+            thread::spawn(|| {
                 reader.lines().filter_map(|line| line.ok()).for_each(func);
             });
             return Ok(());
@@ -76,7 +78,7 @@ fn send_input_and_read_output() {
         assert_eq!(line, "Hello World!");
         lines_read = lines_read + 1;
 
-        let mut lines = lines_read_clone.lock().expect("could not take lock");
+        let lines = lines_read_clone.lock().expect("could not take lock");
         lines.replace(lines_read);
     });
 

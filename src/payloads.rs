@@ -3,13 +3,6 @@ use serde::Serialize;
 use crate::config::Config;
 use crate::ha_entity::{Device, DeviceClass};
 
-//TODO merge with DeviceClass from ha_entity
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum HaDeviceClass {
-    Switch,
-}
-
 #[derive(Debug, Clone, Serialize)]
 pub struct DevicePayload {
     name: String,

@@ -1,6 +1,6 @@
 use rumqttc::{LastWill, MqttOptions, QoS};
-use serde::{Deserialize, Serialize};
-use std::{fs, time::Duration};
+use serde::Deserialize;
+use std::time::Duration;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct MqttCredentials {

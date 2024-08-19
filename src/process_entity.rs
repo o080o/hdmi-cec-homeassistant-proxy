@@ -1,10 +1,8 @@
+use log::{debug, info, trace};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use std::thread;
 
-use crate::config::{Config, DeviceConfig};
 use crate::ha_entity::SimpleCommand;
-use crate::payloads::ConfigPayload;
 use crate::process::CommandProcess;
 use crate::service::StateManager;
 
@@ -59,9 +57,7 @@ impl HdmiCecProcess {
                 "standby" => "OFF",
                 _ => "UNKNOWN",
             };
-            println!(
-                "parsed power status: {mqtt_state} from section {state_string} of line {line}"
-            );
+            debug!("parsed power status: {mqtt_state} from section {state_string} of line {line}");
             return Some(mqtt_state.to_string());
         } else {
             return None;
@@ -69,7 +65,7 @@ impl HdmiCecProcess {
     }
 
     pub fn listen(&self) {
-        println!("starting to listen for the hdmicec process...");
+        info!("listening to the cec-client process...");
         let state = self
             .state
             .lock()
@@ -81,7 +77,7 @@ impl HdmiCecProcess {
 
         process
             .with_output(move |line| {
-                println!("got line from stdout: {}", line);
+                trace!("got line from stdout: {}", line);
                 if let Some(mqtt_state) = HdmiCecProcess::parse_power_state(&line) {
                     tv_state
                         .lock()

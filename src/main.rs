@@ -1,7 +1,6 @@
-use ha_entity::{Device, DeviceClass, EntityClass, SimpleCommand};
+use ha_entity::{Device, DeviceClass, EntityClass};
 use log::{debug, info};
-use rumqttc::{Client, QoS};
-use std::{alloc::handle_alloc_error, fs, sync::Arc, thread, time::Duration};
+use std::{fs, sync::Arc, thread, time::Duration};
 
 mod config;
 mod ha_entity;
@@ -13,14 +12,12 @@ mod service;
 const CONFIG_FILE: &'static str = "config.toml";
 
 fn main() {
-    use config::Config;
     use env_logger::Env;
     use process_entity::{ClonableHdmiCecProcess, HdmiCecProcess};
     use service::HaBroker;
 
     // default to sending info or above messages.
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-    env_logger::init();
 
     info!("Starting up...");
 
@@ -41,7 +38,7 @@ fn main() {
 
     //start up the cec-client process. We will share this in a few different
     // threads, so we'll wrap it in a Arc so we can clone it.
-    let mut hdmicec = Arc::new(HdmiCecProcess::new());
+    let hdmicec = Arc::new(HdmiCecProcess::new());
     let switch_hdmicec = hdmicec.clone(); // clone so we can move into a closure later.
 
     // Every entity should be part of a "Device" for homeassistant.
@@ -55,12 +52,10 @@ fn main() {
 
             // make another clone for the next closure...
             let switch_hdmicec = switch_hdmicec.clone();
-            thread::spawn(move || {
-                while true {
-                    debug!("querying TV...");
-                    switch_hdmicec.query_tv_state();
-                    thread::sleep(Duration::from_secs(10));
-                }
+            thread::spawn(move || loop {
+                debug!("querying TV...");
+                switch_hdmicec.query_tv_state();
+                thread::sleep(Duration::from_secs(10));
             });
         })
         .with_commands(hdmicec.command(move |hdmicec, payload| {
@@ -73,25 +68,25 @@ fn main() {
         }));
 
     // Setup a simple button for turning the volume up
-    let mut vol_up = device
+    let vol_up = device
         .entity("volume_up", EntityClass::Button, DeviceClass::None)
-        .with_commands(hdmicec.command(|hdmicec, payload| {
+        .with_commands(hdmicec.command(|hdmicec, _payload| {
             info!("Volume Up");
             hdmicec.volume_up();
         }));
 
     // Setup a simple button for turning the volume down
-    let mut vol_down = device
+    let vol_down = device
         .entity("volume_down", EntityClass::Button, DeviceClass::None)
-        .with_commands(hdmicec.command(|hdmicec, payload| {
+        .with_commands(hdmicec.command(|hdmicec, _payload| {
             info!("Volume Down");
             hdmicec.volume_down();
         }));
 
     // Setup a simple button for muting
-    let mut mute = device
+    let mute = device
         .entity("mute", EntityClass::Button, DeviceClass::None)
-        .with_commands(hdmicec.command(|hdmicec, payload| {
+        .with_commands(hdmicec.command(|hdmicec, _payload| {
             info!("Mute");
             hdmicec.mute();
         }));

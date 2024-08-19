@@ -1,11 +1,6 @@
-use rumqttc::{Client, LastWill, MqttOptions, QoS};
-use serde::{Deserialize, Serialize};
 use std::string::ToString;
-use std::thread;
-use std::{fs, time::Duration};
-use strum_macros::Display;
 
-use crate::config::{Config, DeviceConfig};
+use crate::config::Config;
 use crate::payloads::ConfigPayload;
 use crate::service::StateManager;
 
@@ -14,6 +9,7 @@ pub trait HaMqttEntity {
     fn get_discovery_topic(&self) -> String;
     fn get_state_topic(&self) -> Option<String>;
     fn get_command_topic(&self) -> Option<String>;
+    #[allow(dead_code)] // for now, we don't use it, but keep it around for now.
     fn get_device(&self) -> Device;
     fn get_name(&self) -> String;
     fn on_command(&mut self, payload: &str);
@@ -21,6 +17,7 @@ pub trait HaMqttEntity {
 }
 
 #[derive(strum_macros::Display, Eq, PartialEq)]
+#[allow(dead_code)]
 pub enum EntityClass {
     #[strum(to_string = "switch")]
     Switch,
@@ -33,6 +30,7 @@ pub enum EntityClass {
 }
 
 #[derive(strum_macros::Display, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum DeviceClass {
     #[strum(to_string = "switch")]
     Switch,
@@ -96,6 +94,7 @@ impl Device {
 pub struct Entity {
     pub name: String,
     pub topic_prefix: String,
+    #[allow(dead_code)]
     pub entity_class: EntityClass,
     pub device_class: DeviceClass,
     pub device: Device,

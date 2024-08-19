@@ -1,7 +1,8 @@
-use std::{borrow::Borrow, collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Context;
-use rumqttc::{Client, Connection, Event, Incoming, Outgoing, Publish, QoS};
+use log::{debug, error, trace};
+use rumqttc::{Client, Connection, Event, Incoming, Publish, QoS};
 
 use crate::{config::Config, ha_entity::HaMqttEntity};
 
@@ -11,22 +12,31 @@ use crate::{config::Config, ha_entity::HaMqttEntity};
 pub struct StateManager {
     client: Arc<Client>,
     state_topic: String,
+    entity_name: String,
 }
 
 #[cfg_attr(test, faux::methods)]
 impl StateManager {
     /// create a new StateManager for a given state topic, and mqtt client reference
-    pub fn new(client: Arc<Client>, state_topic: String) -> Self {
+    pub fn new(client: Arc<Client>, state_topic: String, entity_name: String) -> Self {
         Self {
             client,
             state_topic,
+            entity_name,
         }
     }
 
     /// update the entities state via the topic in the constructor. 'state' is the entire message payload, possibly JSON formatted. For simple switches, this may just be the string "ON" or "OFF". See Homeassistant docs for more info on what to send.
     pub fn update_state(&self, state: String) {
         self.client
-            .publish(&self.state_topic, QoS::AtLeastOnce, false, state);
+            .publish(&self.state_topic, QoS::AtLeastOnce, false, state)
+            .with_context(|| {
+                format!(
+                    "entity: \"{}\" topic: \"{}\"  ",
+                    self.entity_name, self.state_topic
+                )
+            })
+            .expect("could not publish entities state message");
     }
 }
 
@@ -49,7 +59,7 @@ impl HaBroker {
     /// Create a new connection from a given config object. Automatically opens a new mqtt connection.
     pub fn from_config(config: Config) -> Self {
         let mqtt_options = config.mqtt.as_mqtt_options();
-        println!("connection options: {:?}", mqtt_options);
+        debug!("connection options: {:?}", mqtt_options);
         let (client, connection) = Client::new(mqtt_options, config.mqtt.async_capacity);
         let ha_broker = Self {
             entities: HashMap::new(),
@@ -67,7 +77,11 @@ impl HaBroker {
 
         // TODO should this happen only after we configure??
         if let Some(state_topic) = entity.get_state_topic() {
-            entity.connect_state(StateManager::new(self.client.clone(), state_topic));
+            entity.connect_state(StateManager::new(
+                self.client.clone(),
+                state_topic,
+                entity.get_name(),
+            ));
         };
 
         if let Some(command_topic) = entity.get_command_topic() {
@@ -95,7 +109,7 @@ impl HaBroker {
             Err(err) => panic! {"cound not stringify the discovery payload! error={err}"},
         };
 
-        println!(
+        debug!(
             "publishing config to topic {}: {}",
             entity.get_discovery_topic(),
             discovery_message,
@@ -119,7 +133,7 @@ impl HaBroker {
         match config_published {
             Ok(_) => {}
             Err(err) => {
-                print!("{err}");
+                error!("{err}");
             }
         }
     }
@@ -134,20 +148,14 @@ impl HaBroker {
 
     fn send_all_discovery_messages(&self) {
         self.entities.iter().for_each(|(_name, entity)| {
-            let fake_entity: &dyn HaMqttEntity = entity.as_ref();
             self.send_discovery_message(entity.as_ref());
-        });
-    }
-
-    fn subscribe_to_all_command_topics(&self) {
-        self.entities.iter().for_each(|(_name, entity)| {
-            self.subscribe_to_command_topic(entity.as_ref());
         });
     }
 
     fn notify_entities(&mut self, event: &Publish) {
         let u8_array = event.payload.iter().cloned().collect::<Vec<u8>>();
-        let payload = String::from_utf8(u8_array).expect("payload is can not be parsed as utf_8");
+        let payload =
+            String::from_utf8(u8_array).expect("command payload  can not be parsed as utf_8");
 
         let matching_entities = self.topic_map.get(&event.topic);
         match matching_entities {
@@ -171,33 +179,36 @@ impl HaBroker {
 
         // subscribe to the homeassistant status topic to recieve birth/will messages. see https://www.home-assistant.io/integrations/mqtt#use-the-birth-and-will-messages-to-trigger-discovery
         self.client
-            .subscribe(&self.config.topic.status, QoS::AtLeastOnce);
+            .subscribe(&self.config.topic.status, QoS::AtLeastOnce)
+            .with_context(|| {
+                format!(
+                    "unable to subscribe to homeassistant's status topic {}",
+                    &self.config.topic.status
+                )
+            })
+            .unwrap();
 
         // Iterate to poll the eventloop for connection progress
         for notification in connection.iter() {
-            println!("Notification = {:?}", notification);
+            trace!("Notification = {:?}", notification);
             match notification {
                 Ok(Event::Incoming(Incoming::Publish(event))) => {
                     if event.topic == self.config.topic.status {
                         if event.payload == "online" {
-                            println!("mqtt integration online. resending discovery messages",);
+                            debug!("mqtt integration online. resending discovery messages",);
                             self.send_all_discovery_messages();
                         } else {
-                            println!("mqtt integration status changed {:?}", event);
+                            debug!("mqtt integration status changed {:?}", event);
                         }
                     } else {
-                        println!("new event published! {:?}", event);
+                        debug!("new event published! {:?}", event);
 
                         // find an entity for event.topic, and use that
                         self.notify_entities(&event);
                     }
                 }
-                Ok(Event::Outgoing(Outgoing::Publish(event))) => {
-                    println!("published event {:?}", event);
-                    // find an entity for event.topic, and use that
-                }
                 Err(err) => {
-                    println!("connection error... {err}");
+                    error!("connection error... {err}");
                 }
                 _ => {}
             }
