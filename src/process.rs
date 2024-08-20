@@ -56,9 +56,11 @@ impl CommandProcess {
 fn read_output() {
     let mut process = CommandProcess::new(Command::new("echo").arg("Hello World!"));
 
-    process.with_output(|line| {
-        assert_eq!(line, "Hello World!\n");
-    });
+    process
+        .with_output(|line| {
+            assert_eq!(line, "Hello World!\n");
+        })
+        .expect("could not process output");
 }
 
 #[test]
@@ -78,13 +80,15 @@ fn send_input_and_read_output() {
     // we will count the number of lines read, so
     // that we know we got some input.
     let mut lines_read = 0;
-    process.with_output(move |line| {
-        assert_eq!(line, "Hello World!");
-        lines_read = lines_read + 1;
+    process
+        .with_output(move |line| {
+            assert_eq!(line, "Hello World!");
+            lines_read = lines_read + 1;
 
-        let lines = lines_read_clone.lock().expect("could not take lock");
-        lines.replace(lines_read);
-    });
+            let lines = lines_read_clone.lock().expect("could not take lock");
+            lines.replace(lines_read);
+        })
+        .expect("could not process output");
 
     // send a known input.
     process
