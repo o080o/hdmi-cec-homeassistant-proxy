@@ -36,5 +36,5 @@ jobs:
       with:
         context: .
         push: true
-        tags: ghcr.io/$:latest
+        tags: ghcr.io/hdmicec2mqtt:latest
         platforms: linux/arm64, linux/amd64
