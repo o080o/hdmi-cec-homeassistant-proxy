@@ -1,6 +1,6 @@
 use ha_entity::{Device, DeviceClass, EntityClass};
 use log::{debug, info};
-use std::{fs, sync::Arc, thread, time::Duration};
+use std::{env, fs, sync::Arc, thread, time::Duration};
 
 mod config;
 mod ha_entity;
@@ -22,7 +22,9 @@ fn main() {
     info!("Starting up...");
 
     // load in the config file
-    let config_file_contents: String = match fs::read_to_string(CONFIG_FILE) {
+    let args: Vec<String> = env::args().collect();
+    let config_file_path: &str = args.get(0).map(|s| s.as_str()).unwrap_or(CONFIG_FILE);
+    let config_file_contents: String = match fs::read_to_string(config_file_path) {
         Ok(content) => content,
         Err(err) => {
             panic!("Error reading config file contents: {err}");

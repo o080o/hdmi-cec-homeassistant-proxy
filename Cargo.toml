@@ -1,5 +1,5 @@
 [package]
-name = "ha-cec-proxy"
+name = "hdmicec2mqtt"
 version = "0.1.0"
 edition = "2021"
 
