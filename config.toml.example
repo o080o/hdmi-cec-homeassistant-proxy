@@ -1,0 +1,14 @@
+[mqtt]
+host="192.168.1.10" # your homeassistant MQTT broker's IP or hostname should go here. If you're using the built-in mostquitto addon, this will just be the same as your homeassistant instance.
+port=1883 # by default, 1883 is the default MQTT port. 
+
+[mqtt.credentials]
+username="username" # this is configured on your MQTT broker.
+password="password"
+
+[topic]
+prefix="homeassistant" # this field is optional, but is used to specify a different topic prefix for the discovery topics. This is configured by default in homeassistant to be "homeassistant". This only need to be set if you change it.
+
+[device]
+device_name="HDMI CEC" # This will be the name of the "Device" that shows up in homeassistant. 
+unique_id="hdmi_cec_homeassistant_proxy" # This needs to be a unique id from any other device on your homeassistant instance. Should consist of only letters, numbers, and underscores.
