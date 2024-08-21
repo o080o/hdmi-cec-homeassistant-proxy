@@ -36,5 +36,6 @@ jobs:
       with:
         context: .
         push: true
-        tags: ghcr.io/hdmicec2mqtt:review
-        platforms: linux/arm64, linux/amd64
+        tags: o080o/hdmicec2mqtt:review
+        platforms: linux/amd64
+        #platforms: linux/arm64, linux/amd64
