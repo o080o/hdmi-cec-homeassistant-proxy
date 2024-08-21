@@ -23,11 +23,12 @@ fn main() {
 
     // load in the config file
     let args: Vec<String> = env::args().collect();
-    let config_file_path: &str = args.get(0).map(|s| s.as_str()).unwrap_or(CONFIG_FILE);
+    let config_file_path: &str = args.get(1).map(|s| s.as_str()).unwrap_or(CONFIG_FILE);
+    info!("Reading config file at {config_file_path}");
     let config_file_contents: String = match fs::read_to_string(config_file_path) {
         Ok(content) => content,
         Err(err) => {
-            panic!("Error reading config file contents: {err}");
+            panic!("Error reading config file \"{config_file_path}\" contents: {err}");
         }
     };
 
