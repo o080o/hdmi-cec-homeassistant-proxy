@@ -37,4 +37,5 @@ jobs:
         context: .
         push: true
         tags: ghcr.io/${{ github.repository }}:latest
-        platforms: linux/arm64/v8, linux/amd64, linux/arm/v7
+        platforms: linux/arm64/v8, linux/amd64
+        #ignoring older arch for now linux/arm/v7

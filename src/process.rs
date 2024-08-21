@@ -32,6 +32,7 @@ impl CommandProcess {
     }
 
     pub fn send(&mut self, input: &str) -> Result<usize, std::io::Error> {
+        debug!("sending to process: {}", input);
         return self.input.write(input.as_bytes());
     }
 
