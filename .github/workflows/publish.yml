@@ -31,11 +31,10 @@ jobs:
         username: ${{github.actor}}
         password: ${{secrets.GITHUB_TOKEN}}
 
-
     - name: Build and push
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v6
       with:
         context: .
         push: true
-        tags: ghcr.io/hdmicec2mqtt:latest
-        platforms: linux/arm64, linux/amd64
+        tags: ghcr.io/${{ github.repository }}:latest
+        platforms: linux/arm64/v8, linux/amd64, linux/arm/v7
