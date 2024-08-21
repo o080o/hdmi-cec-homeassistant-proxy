@@ -38,4 +38,4 @@ jobs:
         push: true
         tags: ghcr.io/${{ github.repository }}:latest
         platforms: linux/arm64/v8, linux/amd64
-        #ignoring older arch for now linux/arm/v7
+        #ignoring older arch for nowent linux/arm/v7
