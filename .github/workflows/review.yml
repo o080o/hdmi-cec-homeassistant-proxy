@@ -38,6 +38,6 @@ jobs:
       with:
         context: .
         push: true
-        tags: o080o/hdmicec2mqtt:review
+        tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
         platforms: linux/amd64
         #platforms: linux/arm64, linux/amd64
