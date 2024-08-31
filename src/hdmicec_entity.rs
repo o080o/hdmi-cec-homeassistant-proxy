@@ -1,4 +1,4 @@
-use log::{debug, info, log_enabled, trace, Level};
+use log::{debug, info, log_enabled, trace};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
@@ -31,8 +31,8 @@ impl HdmiCecProcess {
         let mut command = Command::new("cat");
         #[cfg(not(test))] // in a real build, use cec-client
         let mut command = Command::new("cec-client");
-        #[cfg(not(test))] // in a real build, use cec-client
-        if !log_enabled!(Level::Trace) {
+
+        if !log_enabled!(log::Level::Trace) {
             command.arg("-d").arg("1");
         }
 
