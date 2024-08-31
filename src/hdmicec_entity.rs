@@ -83,6 +83,11 @@ impl HdmiCecProcess {
             });
     }
 
+    pub fn kill(&self) -> Result<(), std::io::Error> {
+        let mut process = self.process.lock().expect("could not lock process");
+        return process.kill();
+    }
+
     pub fn listen(&self) {
         info!("listening to the cec-client process...");
         let state = self

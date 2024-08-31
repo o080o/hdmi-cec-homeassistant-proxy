@@ -51,6 +51,10 @@ impl CommandProcess {
             return Err("Can not read from output twice! output is already taken!");
         }
     }
+
+    pub fn kill(&mut self) -> Result<(), std::io::Error> {
+        return self.child.kill();
+    }
 }
 
 #[test]

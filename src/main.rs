@@ -1,3 +1,4 @@
+use anyhow::Error;
 use ha_entity::{Device, DeviceClass, EntityClass};
 use log::{debug, info};
 use std::{env, fs, sync::Arc, thread, time::Duration};
@@ -11,7 +12,7 @@ mod service;
 
 const CONFIG_FILE: &'static str = "config.toml";
 
-fn main() {
+fn main() -> Result<(), Error> {
     use env_logger::Env;
     use hdmicec_entity::{ClonableHdmiCecProcess, HdmiCecProcess};
     use service::HaBroker;
@@ -124,5 +125,8 @@ fn main() {
         homeassistant.add_entity(source);
     });
     hdmicec.listen();
-    homeassistant.listen();
+    let err = homeassistant.listen();
+
+    hdmicec.kill().expect("could not kill cec-client process");
+    return err;
 }
