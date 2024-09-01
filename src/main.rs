@@ -1,6 +1,7 @@
+use anyhow::Error;
 use ha_entity::{Device, DeviceClass, EntityClass};
 use log::{debug, info};
-use std::{fs, sync::Arc, thread, time::Duration};
+use std::{env, fs, sync::Arc, thread, time::Duration};
 
 mod config;
 mod ha_entity;
@@ -11,7 +12,7 @@ mod service;
 
 const CONFIG_FILE: &'static str = "config.toml";
 
-fn main() {
+fn main() -> Result<(), Error> {
     use env_logger::Env;
     use hdmicec_entity::{ClonableHdmiCecProcess, HdmiCecProcess};
     use service::HaBroker;
@@ -22,10 +23,13 @@ fn main() {
     info!("Starting up...");
 
     // load in the config file
-    let config_file_contents: String = match fs::read_to_string(CONFIG_FILE) {
+    let args: Vec<String> = env::args().collect();
+    let config_file_path: &str = args.get(1).map(|s| s.as_str()).unwrap_or(CONFIG_FILE);
+    info!("Reading config file at {config_file_path}");
+    let config_file_contents: String = match fs::read_to_string(config_file_path) {
         Ok(content) => content,
         Err(err) => {
-            panic!("Error reading config file contents: {err}");
+            panic!("Error reading config file \"{config_file_path}\" contents: {err}");
         }
     };
 
@@ -121,5 +125,8 @@ fn main() {
         homeassistant.add_entity(source);
     });
     hdmicec.listen();
-    homeassistant.listen();
+    let err = homeassistant.listen();
+
+    hdmicec.kill().expect("could not kill cec-client process");
+    return err;
 }

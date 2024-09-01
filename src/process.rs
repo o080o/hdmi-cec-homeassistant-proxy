@@ -32,6 +32,7 @@ impl CommandProcess {
     }
 
     pub fn send(&mut self, input: &str) -> Result<usize, std::io::Error> {
+        debug!("sending to process: {}", input);
         return self.input.write(input.as_bytes());
     }
 
@@ -50,15 +51,21 @@ impl CommandProcess {
             return Err("Can not read from output twice! output is already taken!");
         }
     }
+
+    pub fn kill(&mut self) -> Result<(), std::io::Error> {
+        return self.child.kill();
+    }
 }
 
 #[test]
 fn read_output() {
     let mut process = CommandProcess::new(Command::new("echo").arg("Hello World!"));
 
-    process.with_output(|line| {
-        assert_eq!(line, "Hello World!\n");
-    });
+    process
+        .with_output(|line| {
+            assert_eq!(line, "Hello World!\n");
+        })
+        .expect("could not setup output");
 }
 
 #[test]
@@ -78,13 +85,15 @@ fn send_input_and_read_output() {
     // we will count the number of lines read, so
     // that we know we got some input.
     let mut lines_read = 0;
-    process.with_output(move |line| {
-        assert_eq!(line, "Hello World!");
-        lines_read = lines_read + 1;
+    process
+        .with_output(move |line| {
+            assert_eq!(line, "Hello World!");
+            lines_read = lines_read + 1;
 
-        let lines = lines_read_clone.lock().expect("could not take lock");
-        lines.replace(lines_read);
-    });
+            let lines = lines_read_clone.lock().expect("could not take lock");
+            lines.replace(lines_read);
+        })
+        .expect("could not setup output");
 
     // send a known input.
     process

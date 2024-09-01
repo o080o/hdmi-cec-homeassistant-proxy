@@ -22,6 +22,19 @@ using a docker-compose file is usually the simplest way to get the service runni
 example docker-compose.yaml file:
 
 
+```
+services:
+  hdmicec2mqtt:
+    container_name: hdmicec2mqtt
+    image: ghcr.io/o080o/hdmicec2mqtt:latest
+    devices:
+      - /dev/cec0:/dev/cec0
+    volumes:
+      - /path/to/your/config.toml:/config.toml
+    restart: unless-stopped
+```
+
+
 ## From Source
 
 1. Create a config file at 'config.toml' in the project root. See config.toml.example

@@ -1,10 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::Context;
+use anyhow::{anyhow, Context, Error};
 use log::{debug, error, info, trace};
 use rumqttc::{Client, Connection, Event, Incoming, Publish, QoS};
 
 use crate::{config::Config, ha_entity::HaMqttEntity};
+
+const MAX_ERROR_COUNT: usize = 10;
 
 /// A way for entities to update their state, without accessing the HaBroker. Entities can easily clone and own a copy of this object.
 #[cfg_attr(test, faux::create)]
@@ -171,7 +173,7 @@ impl HaBroker {
         }
     }
 
-    pub fn listen(&mut self) -> () {
+    pub fn listen(&mut self) -> Result<(), Error> {
         // we need to take ownership of "connection", so that we can continue to borrow from self.
         let mut connection = self
             .connection
@@ -187,6 +189,7 @@ impl HaBroker {
         info!("listening for mqtt messages...");
 
         // Iterate to poll the eventloop for connection progress
+        let mut error_count = 0;
         for notification in connection.iter() {
             trace!("Notification = {:?}", notification);
             match notification {
@@ -200,16 +203,22 @@ impl HaBroker {
                         }
                     } else {
                         debug!("new event published! {:?}", event);
-
-                        // find an entity for event.topic, and use that
+                        error_count = 0; // reset error count
+                                         // find an entity for event.topic, and use that
                         self.notify_entities(&event);
                     }
                 }
                 Err(err) => {
+                    error_count += 1;
+                    if error_count > MAX_ERROR_COUNT {
+                        error!("Too many successive errors. Killing process.");
+                        return Err(anyhow!("Too many connection errors"));
+                    }
                     error!("connection error... {err}");
                 }
                 _ => {}
             }
         }
+        return Ok(());
     }
 }

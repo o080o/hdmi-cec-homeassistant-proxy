@@ -1,6 +1,5 @@
 use serde::Serialize;
 
-use crate::config::Config;
 use crate::ha_entity::{Device, DeviceClass};
 
 #[derive(Debug, Clone, Serialize)]

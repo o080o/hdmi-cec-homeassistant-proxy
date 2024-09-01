@@ -1,4 +1,4 @@
-use log::{debug, info, trace};
+use log::{debug, info, log_enabled, trace};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
@@ -31,8 +31,10 @@ impl HdmiCecProcess {
         let mut command = Command::new("cat");
         #[cfg(not(test))] // in a real build, use cec-client
         let mut command = Command::new("cec-client");
-        #[cfg(not(test))] // in a real build, use cec-client
-        command.arg("-d").arg("1");
+
+        if !log_enabled!(log::Level::Trace) {
+            command.arg("-d").arg("1");
+        }
 
         let process = CommandProcess::new(&mut command);
         return Self {
@@ -60,6 +62,7 @@ impl HdmiCecProcess {
             debug!("parsed power status: {mqtt_state} from section {state_string} of line {line}");
             return Some(mqtt_state.to_string());
         } else {
+            trace!("cec-client >>>>> {}", line);
             return None;
         }
     }
@@ -78,6 +81,11 @@ impl HdmiCecProcess {
             .map(|state| {
                 state.update_state(mqtt_state.to_string());
             });
+    }
+
+    pub fn kill(&self) -> Result<(), std::io::Error> {
+        let mut process = self.process.lock().expect("could not lock process");
+        return process.kill();
     }
 
     pub fn listen(&self) {
